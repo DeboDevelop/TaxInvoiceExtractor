@@ -41,7 +41,7 @@ DB_CONFIG = {
     "user": os.environ.get("POSTGRES_USER"),
     "password": os.environ.get("POSTGRES_PASSWORD"),
     "host": os.environ.get("POSTGRES_HOST"),
-    "port": 5432,
+    "port": int(os.environ.get("POSTGRES_PORT")),
 }
 
 connection_pool = ConnectionPool(minconn=1, maxconn=10, **DB_CONFIG)

@@ -1,14 +1,21 @@
 #!/bin/bash
 
-if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+# Get the directory of the script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Navigate two directories up to find the .env file
+ENV_FILE="$SCRIPT_DIR/../../.env"
+
+# Load environment variables from .env file
+if [ -f "$ENV_FILE" ]; then
+    source "$ENV_FILE"
+    echo "Environment variables loaded from $ENV_FILE"
+else
+    echo "Error: $ENV_FILE not found"
+    exit 1
 fi
 
 POSTGRES_CONTAINER_NAME="my_postgres"
-POSTGRES_USER="${POSTGRES_USER:-your_default_username}"
-POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-your_default_password}"
-POSTGRES_DB="${POSTGRES_DB:-your_default_database}"
-POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 
 if [ "$(docker ps -q -f name=$POSTGRES_CONTAINER_NAME)" ]; then
     # Restart the PostgreSQL container
@@ -18,10 +25,10 @@ else
     # Run the PostgreSQL container
     docker run -d \
         --name $POSTGRES_CONTAINER_NAME \
-        -p 5432:5432 \
-        -e POSTGRES_USER=your_default_username \
-        -e POSTGRES_PASSWORD=your_default_password \
-        -e POSTGRES_DB=your_default_database \
+        -p 5433:5432 \
+        -e POSTGRES_USER=$POSTGRES_USER \
+        -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+        -e POSTGRES_DB=$POSTGRES_DB \
         postgres
 
     echo "PostgreSQL container started."

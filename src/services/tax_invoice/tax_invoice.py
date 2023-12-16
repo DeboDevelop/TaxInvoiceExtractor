@@ -1,4 +1,4 @@
-from typing import Optional, Dict, List, Union
+from typing import Optional, Dict, List, Union, Any
 import camelot
 from datetime import datetime
 
@@ -161,12 +161,25 @@ class TaxInvoice(Invoice):
             logger.error("An error occurred: %s", e)
             return None
 
-    def generate_broker_report(self, provided_broker: str, timeline: str):
+    def generate_broker_report(
+        self, provided_broker: str, period: str
+    ) -> Optional[List[Any]]:
+        """Answer to Part 5 Question 1.
+        Generate a report for the broker, sorting loan amounts in descending order from
+        maximum to minimum, covering daily, weekly, and monthly periods.
+
+        Args:
+            provided_broker (str): name of the user provided broker
+            period (str): daily, weekly, and monthly periods
+
+        Returns:
+            Optional[List[Any]]: Result
+        """
         try:
             with engine.connect() as connection:
                 query = None
 
-                if timeline == 'daily':
+                if period == "daily":
                     query = text(
                         """
                         SELECT
@@ -179,7 +192,7 @@ class TaxInvoice(Invoice):
                         ORDER BY settlement_date DESC;
                         """
                     )
-                elif timeline == 'weekly':
+                elif period == "weekly":
                     query = text(
                         """
                         SELECT
@@ -192,7 +205,7 @@ class TaxInvoice(Invoice):
                         ORDER BY week_start DESC;
                         """
                     )
-                elif timeline == 'monthly':
+                elif period == "monthly":
                     query = text(
                         """
                         SELECT
@@ -207,7 +220,9 @@ class TaxInvoice(Invoice):
                     )
 
                 if query is not None:
-                    result = connection.execute(query, {"provided_broker": provided_broker})
+                    result = connection.execute(
+                        query, {"provided_broker": provided_broker}
+                    )
                     return result.fetchall()
 
         except SQLAlchemyError as e:
@@ -215,3 +230,96 @@ class TaxInvoice(Invoice):
             print(f"An error occurred: {e}")
 
         return None
+
+    def total_loan_amount_by_date(self) -> Optional[List[Any]]:
+        """Answer to Part 5 Question 2.
+        Generate a report of the total loan amount grouped by date.
+
+        Returns:
+            Optional[List[Any]]: Result
+        """
+        try:
+            query = text(
+                """
+                SELECT
+                    settlement_date,
+                    SUM(total_loan_amount) AS total_loan_amount
+                FROM tax_invoice
+                GROUP BY settlement_date
+                ORDER BY settlement_date;
+                """
+            )
+            with engine.connect() as connection:
+                result = connection.execute(query)
+                return result.fetchall()
+
+        except SQLAlchemyError as e:
+            # Log the error using a logger
+            logger.error("An error occurred: %s", e)
+            return None
+
+    def tier_level_by_transaction(self) -> Optional[List[Any]]:
+        """Answer to Part 5 Question 3.
+        Define tier level of each transaction, based on the following criteria
+            a. Tier 1 : Total Loan Amount > 1,00,000
+            b. Tier 2 : Total Loan Amount > 50,000
+            c. Tier 3 : Total Loan Amount > 10,000
+
+        Returns:
+            Optional[List[Any]]: Result
+        """
+        try:
+            query = text(
+                """
+                SELECT
+                    settlement_date,
+                    total_loan_amount,
+                    CASE
+                        WHEN total_loan_amount > 100000 THEN 'Tier 1'
+                        WHEN total_loan_amount > 50000 THEN 'Tier 2'
+                        WHEN total_loan_amount > 10000 THEN 'Tier 3'
+                        ELSE 'Other'
+                    END AS tier_level
+                FROM tax_invoice
+                ORDER BY settlement_date;
+                """
+            )
+            with engine.connect() as connection:
+                result = connection.execute(query)
+                return result.fetchall()
+
+        except SQLAlchemyError as e:
+            # Log the error using a logger
+            logger.error("An error occurred: %s", e)
+            return None
+
+    def loans_by_tier_and_date(self) -> Optional[List[Any]]:
+        """Answer to Part 5 Question 4.
+        Generate a report of the number of loans under each tier group by date.
+
+        Returns:
+            Optional[List[Any]]: Result
+        """
+        try:
+            query = text(
+                """
+                SELECT
+                    settlement_date,
+                    COUNT(*) AS loan_count,
+                    SUM(CASE WHEN total_loan_amount > 100000 THEN 1 ELSE 0 END) AS tier_1_count,
+                    SUM(CASE WHEN total_loan_amount > 50000 AND total_loan_amount <= 100000 THEN 1 ELSE 0 END) AS tier_2_count,
+                    SUM(CASE WHEN total_loan_amount > 10000 AND total_loan_amount <= 50000 THEN 1 ELSE 0 END) AS tier_3_count,
+                    SUM(CASE WHEN total_loan_amount <= 10000 THEN 1 ELSE 0 END) AS other_count
+                FROM tax_invoice
+                GROUP BY settlement_date
+                ORDER BY settlement_date;
+                """
+            )
+            with engine.connect() as connection:
+                result = connection.execute(query)
+                return result.fetchall()
+
+        except SQLAlchemyError as e:
+            # Log the error using a logger
+            logger.error("An error occurred: %s", e)
+            return None

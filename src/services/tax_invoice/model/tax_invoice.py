@@ -3,8 +3,9 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+
 class TaxInvoice(Base):
-    __tablename__ = 'tax_invoice'
+    __tablename__ = "tax_invoice"
     app_id = Column(Integer, primary_key=True)
     xref = Column(Integer)
     settlement_date = Column(Date)
@@ -17,3 +18,6 @@ class TaxInvoice(Base):
     upfront = Column(Float)
     upfront_incl_gst = Column(Float)
 
+    __table_args__ = (
+        Index("idx_xref_total_loan_amount", "xref", "total_loan_amount", unique=True),
+    )

@@ -2,6 +2,7 @@ from typing import Optional, Dict, List, Union
 import camelot
 from datetime import datetime
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
@@ -90,3 +91,26 @@ class TaxInvoice(Invoice):
         except Exception as e:
             # Log other unexpected errors
             logger.error("Unexpected error: %s", e)
+
+    def total_loan_amount_in_given_date_range(self, start_date: str, end_date: str):
+        with engine.connect() as connection:
+            query_total_loan = text(
+                """
+                SELECT SUM(total_loan_amount) AS total_loan_amount
+                FROM tax_invoice
+                WHERE settlement_date BETWEEN :start_date AND :end_date
+                """
+            )
+            result_total_loan = connection.execute(
+                query_total_loan,
+                {
+                    "start_date": datetime.strptime(start_date, "%d/%m/%Y").strftime(
+                        "%Y-%m-%d"
+                    ),
+                    "end_date": datetime.strptime(end_date, "%d/%m/%Y").strftime(
+                        "%Y-%m-%d"
+                    ),
+                },
+            ).scalar()
+
+            return result_total_loan

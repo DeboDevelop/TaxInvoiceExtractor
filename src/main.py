@@ -7,4 +7,8 @@ if __name__ == "__main__":
     load_dotenv()
     PDF_PATH = os.environ.get("PDF_PATH")
     tax_invoice = TaxInvoice(PDF_PATH)
-    parse_large_pdf(tax_invoice)
+    # parse_large_pdf(tax_invoice)
+    result_total_loan = tax_invoice.total_loan_amount_in_given_date_range(
+        "17/10/2023", "25/10/2023"
+    )
+    print(result_total_loan)

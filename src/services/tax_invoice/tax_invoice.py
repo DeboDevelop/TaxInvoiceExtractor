@@ -2,10 +2,10 @@ from typing import Optional, Dict, List, Union
 import camelot
 from datetime import datetime
 
-from sqlalchemy import text
+from sqlalchemy import text, TextClause
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from services.invoice import Invoice
 from services.tax_invoice.model.tax_invoice import TaxInvoiceModel
@@ -92,25 +92,70 @@ class TaxInvoice(Invoice):
             # Log other unexpected errors
             logger.error("Unexpected error: %s", e)
 
-    def total_loan_amount_in_given_date_range(self, start_date: str, end_date: str):
-        with engine.connect() as connection:
-            query_total_loan = text(
-                """
-                SELECT SUM(total_loan_amount) AS total_loan_amount
-                FROM tax_invoice
-                WHERE settlement_date BETWEEN :start_date AND :end_date
-                """
-            )
-            result_total_loan = connection.execute(
-                query_total_loan,
-                {
-                    "start_date": datetime.strptime(start_date, "%d/%m/%Y").strftime(
-                        "%Y-%m-%d"
-                    ),
-                    "end_date": datetime.strptime(end_date, "%d/%m/%Y").strftime(
-                        "%Y-%m-%d"
-                    ),
-                },
-            ).scalar()
+    def total_loan_amount_in_given_date_range(
+        self, start_date: str, end_date: str
+    ) -> Optional[float]:
+        """Answer to Part 4 Question 1. Calculate the total loan amount during a specific time period.
 
-            return result_total_loan
+        Args:
+            start_date (str): _description_
+            end_date (str): _description_
+
+        Returns:
+            Optional[float]: _description_
+        """    
+        try:
+            with engine.connect() as connection:
+                query_total_loan: TextClause = text(
+                    """
+                    SELECT SUM(total_loan_amount) AS total_loan_amount
+                    FROM tax_invoice
+                    WHERE settlement_date BETWEEN :start_date AND :end_date
+                    """
+                )
+                result_total_loan: float = connection.execute(
+                    query_total_loan,
+                    {
+                        "start_date": datetime.strptime(
+                            start_date, "%d/%m/%Y"
+                        ).strftime("%Y-%m-%d"),
+                        "end_date": datetime.strptime(end_date, "%d/%m/%Y").strftime(
+                            "%Y-%m-%d"
+                        ),
+                    },
+                ).scalar()
+
+                return result_total_loan
+
+        except SQLAlchemyError as e:
+            logger.error("An error occurred: %s", e)
+            return None
+
+    def highest_loan_by_broker(self, provided_broker: str) -> Optional[float]:
+        """ Answer to Part 4 Question 2. Calculate the highest loan amount given by a broker.
+
+        Args:
+            provided_broker (str): name of the user provided broker
+
+        Returns:
+            Optional[float]: Result in float or None in case of error
+        """        
+        try:
+            with engine.connect() as connection:
+                query_highest_loan: TextClause = text(
+                    """
+                    SELECT MAX(total_loan_amount) AS highest_loan_amount
+                    FROM tax_invoice
+                    WHERE broker = :provided_broker
+                    """
+                )
+                result_highest_loan: float = connection.execute(
+                    query_highest_loan,
+                    {"provided_broker": provided_broker},
+                ).scalar()
+
+                return result_highest_loan
+
+        except SQLAlchemyError as e:
+            logger.error("An error occurred: %s", e)
+            return None

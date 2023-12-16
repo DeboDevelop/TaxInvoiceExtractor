@@ -11,4 +11,8 @@ if __name__ == "__main__":
     result_total_loan = tax_invoice.total_loan_amount_in_given_date_range(
         "17/10/2023", "25/10/2023"
     )
+    result_highest_loan = tax_invoice.highest_loan_by_broker(
+        "Steve Dahu"
+    )
     print(result_total_loan)
+    print(result_highest_loan)

@@ -95,7 +95,8 @@ class TaxInvoice(Invoice):
     def total_loan_amount_in_given_date_range(
         self, start_date: str, end_date: str
     ) -> Optional[float]:
-        """Answer to Part 4 Question 1. Calculate the total loan amount during a specific time period.
+        """Answer to Part 4 Question 1.
+        Calculate the total loan amount during a specific time period.
 
         Args:
             start_date (str): _description_
@@ -103,7 +104,7 @@ class TaxInvoice(Invoice):
 
         Returns:
             Optional[float]: _description_
-        """    
+        """
         try:
             with engine.connect() as connection:
                 query_total_loan: TextClause = text(
@@ -132,14 +133,14 @@ class TaxInvoice(Invoice):
             return None
 
     def highest_loan_by_broker(self, provided_broker: str) -> Optional[float]:
-        """ Answer to Part 4 Question 2. Calculate the highest loan amount given by a broker.
+        """Answer to Part 4 Question 2. Calculate the highest loan amount given by a broker.
 
         Args:
             provided_broker (str): name of the user provided broker
 
         Returns:
             Optional[float]: Result in float or None in case of error
-        """        
+        """
         try:
             with engine.connect() as connection:
                 query_highest_loan: TextClause = text(
@@ -159,3 +160,58 @@ class TaxInvoice(Invoice):
         except SQLAlchemyError as e:
             logger.error("An error occurred: %s", e)
             return None
+
+    def generate_broker_report(self, provided_broker: str, timeline: str):
+        try:
+            with engine.connect() as connection:
+                query = None
+
+                if timeline == 'daily':
+                    query = text(
+                        """
+                        SELECT
+                            settlement_date,
+                            broker,
+                            MAX(total_loan_amount) AS max_loan_amount
+                        FROM tax_invoice
+                        WHERE broker = :provided_broker
+                        GROUP BY settlement_date, broker
+                        ORDER BY settlement_date DESC;
+                        """
+                    )
+                elif timeline == 'weekly':
+                    query = text(
+                        """
+                        SELECT
+                            DATE_TRUNC('week', settlement_date) AS week_start,
+                            broker,
+                            MAX(total_loan_amount) AS max_loan_amount
+                        FROM tax_invoice
+                        WHERE broker = :provided_broker
+                        GROUP BY week_start, broker
+                        ORDER BY week_start DESC;
+                        """
+                    )
+                elif timeline == 'monthly':
+                    query = text(
+                        """
+                        SELECT
+                            DATE_TRUNC('month', settlement_date) AS month_start,
+                            broker,
+                            MAX(total_loan_amount) AS max_loan_amount
+                        FROM tax_invoice
+                        WHERE broker = :provided_broker
+                        GROUP BY month_start, broker
+                        ORDER BY month_start DESC;
+                        """
+                    )
+
+                if query is not None:
+                    result = connection.execute(query, {"provided_broker": provided_broker})
+                    return result.fetchall()
+
+        except SQLAlchemyError as e:
+            # Log the error using a logger or print for simplicity
+            print(f"An error occurred: {e}")
+
+        return None

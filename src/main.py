@@ -16,3 +16,13 @@ if __name__ == "__main__":
     )
     print(result_total_loan)
     print(result_highest_loan)
+    daily_report = tax_invoice.generate_broker_report("Stratton Norwest", "daily")
+    for dr in daily_report:
+        print(dr)
+    weekly_report = tax_invoice.generate_broker_report("Stratton Norwest", "weekly")
+    for wr in weekly_report:
+        print(wr)
+    monthly_report = tax_invoice.generate_broker_report("Stratton Norwest", "monthly")
+    for mr in monthly_report:
+        print(mr)
+    print()

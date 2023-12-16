@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, MetaData, Engine
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,9 +11,9 @@ DB_CONFIG = {
     "port": int(os.environ.get("POSTGRES_PORT")),
 }
 
-connection_string = f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
+connection_string: str = f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
 
-engine = create_engine(connection_string)
-metadata = MetaData()
+engine: Engine = create_engine(connection_string)
+metadata: MetaData = MetaData()
 
 metadata.bind = engine

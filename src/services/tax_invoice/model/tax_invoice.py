@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-class TaxInvoice(Base):
+class TaxInvoiceModel(Base):
     __tablename__ = "tax_invoice"
     app_id = Column(Integer, primary_key=True)
     xref = Column(Integer)
